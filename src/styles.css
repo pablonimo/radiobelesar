@@ -1,0 +1,302 @@
+:root {
+  /* Paleta Radio Belesar */
+  --crema: #f4ead5;
+  --crema-2: #ece0c6;
+  --tinta: #2a241a;
+  --verde: #2a7f7a;
+  --mostaza: #d8a531;
+  --terracota: #c4622d;
+  --gris: #b9ac90;
+  --sombra: rgba(42, 36, 26, 0.18);
+  --radio: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--crema);
+  color: var(--tinta);
+  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  overscroll-behavior: none;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: none;
+  border-radius: 10px;
+}
+
+/* ---------- Pantalla de acceso ---------- */
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--crema);
+  z-index: 50;
+}
+.login-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(90vw, 340px);
+  padding: 32px;
+  background: #fff;
+  border-radius: var(--radio);
+  box-shadow: 0 10px 40px var(--sombra);
+  text-align: center;
+}
+.login-card h1 {
+  margin: 0;
+  color: var(--verde);
+  font-size: 1.8rem;
+}
+.login-card .tagline {
+  margin: 0 0 8px;
+  color: var(--terracota);
+  font-style: italic;
+}
+.login-card input,
+.bb-vol input {
+  font: inherit;
+}
+.login-card input {
+  padding: 12px;
+  border: 2px solid var(--crema-2);
+  border-radius: 10px;
+}
+.login-card button {
+  padding: 12px;
+  background: var(--verde);
+  color: #fff;
+  font-weight: 600;
+}
+.error {
+  color: var(--terracota);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* ---------- Cabeceira ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--verde);
+  color: var(--crema);
+}
+.brand strong {
+  font-size: 1.2rem;
+}
+.brand span {
+  opacity: 0.85;
+  margin-left: 4px;
+}
+.topbar-actions {
+  display: flex;
+  gap: 8px;
+}
+.topbar-actions .ghost {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  padding: 8px 12px;
+}
+.panic {
+  background: var(--terracota);
+  color: #fff;
+  font-weight: 700;
+  padding: 8px 16px;
+}
+
+/* ---------- Grella de pads ---------- */
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+}
+.grid-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.pad {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 84px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: #fff;
+  border: 3px solid transparent;
+  border-radius: var(--radio);
+  box-shadow: 0 2px 8px var(--sombra);
+  color: var(--tinta);
+  transition: transform 0.05s, box-shadow 0.1s;
+  overflow: hidden;
+}
+.pad-space {
+  flex: 1 1 100%;
+  min-height: 60px;
+}
+.pad:active {
+  transform: scale(0.97);
+}
+
+.pad[data-color="verde"] {
+  background: #e3efee;
+}
+.pad[data-color="mostaza"] {
+  background: #f6ecd2;
+}
+.pad[data-color="terracota"] {
+  background: #f3ddd0;
+}
+.pad.empty {
+  background: #fff;
+  border-style: dashed;
+  border-color: var(--crema-2);
+  color: var(--gris);
+}
+
+.pad-key {
+  font-size: 0.7rem;
+  font-weight: 700;
+  opacity: 0.55;
+  text-transform: uppercase;
+}
+.pad-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.1;
+  word-break: break-word;
+}
+.pad-add {
+  font-size: 0.85rem;
+  align-self: center;
+  margin: auto 0;
+}
+.pad-icons {
+  display: flex;
+  gap: 4px;
+  font-size: 0.95rem;
+}
+.pad-icons .ic {
+  color: var(--verde);
+}
+
+.pad.selected {
+  border-color: var(--mostaza);
+}
+.pad.playing {
+  box-shadow: 0 0 0 3px var(--terracota), 0 0 18px var(--terracota);
+}
+.pad.loading::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--gris);
+  border-top-color: var(--verde);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Barra inferior ---------- */
+.bottombar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 16px 14px;
+  background: var(--crema-2);
+  border-top: 2px solid var(--gris);
+}
+.bb-info {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+}
+.bb-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--verde);
+}
+.bb-wave {
+  position: relative;
+  height: 96px;
+}
+.bb-canvas {
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  border-radius: 10px;
+  touch-action: none;
+}
+.bb-handle {
+  position: absolute;
+  top: 0;
+  width: 12px;
+  height: 100%;
+  margin-left: -6px;
+  cursor: ew-resize;
+  background: var(--mostaza);
+  opacity: 0.85;
+  border-radius: 4px;
+  touch-action: none;
+}
+.bb-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.bb-controls button,
+.bb-controls select {
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid var(--gris);
+  border-radius: 8px;
+}
+.bb-play {
+  background: var(--verde) !important;
+  color: #fff;
+  min-width: 44px;
+}
+.bb-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.bb-vol,
+.bb-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.bb-spacer {
+  flex: 1;
+}
+.danger {
+  color: var(--terracota);
+  font-weight: 600;
+}

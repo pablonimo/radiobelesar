@@ -1,0 +1,31 @@
+# Despregue en el servidor (mesmo patrón que coinbase-bot):
+# imaxe en GHCR + Traefik por labels + Watchtower para actualización automática.
+#
+# Colócao en  ~/radiobelesar/docker-compose.yml  e executa:  docker compose up -d
+# A partir de aí, Watchtower vai actualizando a imaxe en canto se publica unha nova.
+
+services:
+  radiobelesar:
+    image: ghcr.io/pablonimo/radiobelesar:latest
+    container_name: radiobelesar
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATA_DIR=/data
+      # Só ten efecto a PRIMEIRA vez (cando aínda non hai clave gardada):
+      # - ADMIN_PASSWORD=belesar
+    volumes:
+      - radiobelesar-data:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.radiobelesar.entrypoints=websecure"
+      - "traefik.http.routers.radiobelesar.rule=Host(`radiobelesar.maizehalle.com`)"
+      - "traefik.http.routers.radiobelesar.tls=true"
+      - "traefik.http.routers.radiobelesar.tls.certresolver=letsencrypt"
+      - "traefik.http.services.radiobelesar.loadbalancer.server.port=3000"
+      # Watchtower: vixía e actualiza este contedor.
+      - "com.centurylinklabs.watchtower.enable=true"
+
+volumes:
+  radiobelesar-data:
