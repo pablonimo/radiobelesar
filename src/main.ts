@@ -31,6 +31,7 @@ const bottomEl = el<HTMLElement>("#bottombar");
 let padEls = new Map<string, HTMLElement>();
 let bottomBar: BottomBar;
 let pendingUploadKey: string | null = null;
+let appStarted = false; // evita arrancar a app (e os seus bucles) dúas veces
 
 // Input de ficheiro oculto, reutilizado para subir/substituír.
 const fileInput = document.createElement("input");
@@ -46,6 +47,7 @@ init();
 
 async function init() {
   if (await checkSession()) {
+    loginOverlay.hidden = true;
     await startApp();
   } else {
     loginOverlay.hidden = false;
@@ -68,6 +70,8 @@ loginForm.addEventListener("submit", async (ev) => {
 });
 
 async function startApp() {
+  if (appStarted) return;
+  appStarted = true;
   appEl.hidden = false;
 
   const pads = await fetchPads();

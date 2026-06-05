@@ -13,6 +13,8 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - DATA_DIR=/data
+      # Tamaño máximo de subida (bytes). 100 MB:
+      - MAX_UPLOAD_BYTES=104857600
       # Só ten efecto a PRIMEIRA vez (cando aínda non hai clave gardada):
       # - ADMIN_PASSWORD=belesar
     volumes:

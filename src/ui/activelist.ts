@@ -1,11 +1,10 @@
 import { listActiveVoices, stopVoiceById, type ActiveVoice } from "../audio/engine.js";
 
 // Columna de "Audios activos" (estilo Soundplant).
-//  - Cada reprodución activa aparece como unha fila cunha barra de progreso.
-//  - As novas reproducións entran pola parte inferior e empuxan as anteriores cara arriba
-//    (a lista usa flex-direction: column-reverse; engadimos cada nova como primeiro fillo).
-//  - Ao rematar o audio, a súa fila desaparece.
-//  - Cada fila ten unha "✕" para detela desde aquí.
+//  - As novas reproducións engádense ao fondo da columna.
+//  - Ao rematar un audio, a súa fila colápsase (altura -> 0) e as de abaixo
+//    soben suavemente ocupando o oco que vai deixando.
+//  - Cada fila ten unha barra de progreso e unha "✕" para detela.
 
 interface Item {
   el: HTMLElement;
@@ -30,9 +29,34 @@ export function createActiveList(listEl: HTMLElement): void {
       ev.stopPropagation();
       stopVoiceById(v.id);
     });
-    // Quitamos a clase de entrada cando remata a animación.
-    el.addEventListener("animationend", () => el.classList.remove("enter"), { once: true });
+    el.addEventListener("animationend", () => el.classList.remove("enter"), {
+      once: true,
+    });
     return { el, bar: el.querySelector(".active-bar") as HTMLElement };
+  }
+
+  // Colapsa a fila e elimínaa ao rematar a transición; as de abaixo soben.
+  function removeItem(item: Item) {
+    const el = item.el;
+    el.style.height = `${el.offsetHeight}px`;
+    el.getBoundingClientRect(); // forzamos reflow para fixar a altura inicial
+    el.classList.add("leaving");
+    el.style.height = "0px";
+    el.style.marginBottom = "0px";
+    el.style.paddingTop = "0px";
+    el.style.paddingBottom = "0px";
+    el.style.opacity = "0";
+
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      el.remove();
+    };
+    el.addEventListener("transitionend", (ev) => {
+      if (ev.propertyName === "height") finish();
+    });
+    setTimeout(finish, 400); // rede de seguridade
   }
 
   function frame() {
@@ -45,17 +69,16 @@ export function createActiveList(listEl: HTMLElement): void {
       if (!item) {
         item = createItem(v);
         items.set(v.id, item);
-        // Primeiro fillo => co column-reverse aparece na parte inferior.
-        listEl.insertBefore(item.el, listEl.firstChild);
+        listEl.appendChild(item.el); // engádese ao fondo da columna
       }
       item.bar.style.width = `${Math.round(v.progress * 100)}%`;
     }
 
-    // Eliminamos as filas das voces que xa remataron.
+    // As voces que xa remataron: colápsanse e as de abaixo soben.
     for (const [id, item] of items) {
       if (!seen.has(id)) {
-        item.el.remove();
         items.delete(id);
+        removeItem(item);
       }
     }
 
