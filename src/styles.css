@@ -15,6 +15,12 @@
   box-sizing: border-box;
 }
 
+/* O atributo `hidden` debe gañar sempre, mesmo sobre regras con display:grid/flex
+   (senón o overlay de login e a barra inferior non se ocultarían). */
+[hidden] {
+  display: none !important;
+}
+
 html,
 body {
   margin: 0;
@@ -299,4 +305,121 @@ button {
 .danger {
   color: var(--terracota);
   font-weight: 600;
+}
+
+/* ---------- Corpo: grella + columna de activos ---------- */
+.body {
+  display: flex;
+  align-items: stretch;
+}
+.body > .grid {
+  flex: 1;
+  min-width: 0;
+}
+
+.active-col {
+  flex: 0 0 230px;
+  display: flex;
+  flex-direction: column;
+  border-left: 2px solid var(--crema-2);
+  background: rgba(255, 255, 255, 0.35);
+}
+.active-title {
+  margin: 0;
+  padding: 12px 14px 8px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gris);
+}
+.active-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column-reverse; /* novas entradas pola parte inferior */
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 10px 12px 14px;
+  overflow-y: auto;
+}
+
+.active-item {
+  position: relative;
+  padding: 8px 28px 10px 10px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px var(--sombra);
+  border-left: 4px solid var(--verde);
+}
+.active-item[data-color="verde"] {
+  border-left-color: var(--verde);
+}
+.active-item[data-color="mostaza"] {
+  border-left-color: var(--mostaza);
+}
+.active-item[data-color="terracota"] {
+  border-left-color: var(--terracota);
+}
+.active-item.enter {
+  animation: active-in 0.18s ease-out;
+}
+@keyframes active-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.active-name {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.15;
+  word-break: break-word;
+  margin-bottom: 8px;
+}
+.active-progress {
+  height: 6px;
+  background: var(--crema-2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.active-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--verde);
+  transition: width 0.08s linear;
+}
+.active-item[data-color="mostaza"] .active-bar {
+  background: var(--mostaza);
+}
+.active-item[data-color="terracota"] .active-bar {
+  background: var(--terracota);
+}
+.active-item.loop .active-progress {
+  /* indicación sutil de bucle */
+  box-shadow: inset 0 0 0 1px var(--gris);
+}
+
+.active-x {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  line-height: 1;
+  padding: 0;
+  font-size: 0.8rem;
+  color: var(--terracota);
+  background: var(--crema);
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+}
+.active-x:hover {
+  background: var(--terracota);
+  color: #fff;
 }
