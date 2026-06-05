@@ -4,6 +4,7 @@ export interface PadHandlers {
   onPress: (key: string) => void; // disparo (pointerdown)
   onRelease: (key: string) => void; // soltar (pointerup) — para modo hold
   onSelect: (key: string) => void; // seleccionar para editar
+  onDropFile: (key: string, file: File) => void; // arrastrar e soltar audio
 }
 
 const KEY_LABELS: Record<string, string> = {
@@ -32,6 +33,20 @@ export function createPadEl(pad: Pad, handlers: PadHandlers): HTMLElement {
   el.addEventListener("pointerleave", () => handlers.onRelease(pad.key));
   // Evitamos o menú contextual nun toque longo en táctil.
   el.addEventListener("contextmenu", (ev) => ev.preventDefault());
+
+  // Arrastrar e soltar un ficheiro de audio sobre o pad para asignalo.
+  el.addEventListener("dragover", (ev) => {
+    ev.preventDefault();
+    if (ev.dataTransfer) ev.dataTransfer.dropEffect = "copy";
+    el.classList.add("dragover");
+  });
+  el.addEventListener("dragleave", () => el.classList.remove("dragover"));
+  el.addEventListener("drop", (ev) => {
+    ev.preventDefault();
+    el.classList.remove("dragover");
+    const file = ev.dataTransfer?.files?.[0];
+    if (file) handlers.onDropFile(pad.key, file);
+  });
 
   renderPadContent(el, pad);
   return el;

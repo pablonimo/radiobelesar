@@ -29,7 +29,14 @@ export function createBottomBar(root: HTMLElement, deps: BottomDeps): BottomBar 
 
   root.innerHTML = `
     <div class="bb-info">
-      <span class="bb-name"></span>
+      <input class="bb-name-input" type="text" placeholder="Nome do son"
+        autocapitalize="none" autocorrect="off" spellcheck="false"
+        aria-label="Nome do son" maxlength="40" />
+      <div class="bb-colors" role="group" aria-label="Cor do pad">
+        <button class="bb-color" data-color="verde" title="Verde"></button>
+        <button class="bb-color" data-color="mostaza" title="Mostaza"></button>
+        <button class="bb-color" data-color="terracota" title="Terracota"></button>
+      </div>
       <span class="bb-time"></span>
     </div>
     <div class="bb-wave">
@@ -63,7 +70,10 @@ export function createBottomBar(root: HTMLElement, deps: BottomDeps): BottomBar 
   const waveBox = $<HTMLElement>(".bb-wave");
   const hStart = $<HTMLElement>(".bb-handle-start");
   const hEnd = $<HTMLElement>(".bb-handle-end");
-  const nameEl = $<HTMLElement>(".bb-name");
+  const nameInput = $<HTMLInputElement>(".bb-name-input");
+  const colorBtns = Array.from(
+    root.querySelectorAll(".bb-color"),
+  ) as HTMLButtonElement[];
   const timeEl = $<HTMLElement>(".bb-time");
   const playBtn = $<HTMLButtonElement>(".bb-play");
   const volEl = $<HTMLInputElement>(".bb-volume");
@@ -89,9 +99,21 @@ export function createBottomBar(root: HTMLElement, deps: BottomDeps): BottomBar 
     if (!pad) return;
     const d = duration();
     const prog = activeProgress(pad.key);
-    const progress = prog && d ? Math.min(prog.position / d, 1) : undefined;
+
+    // Posición do cursor. En bucle, envolve dentro do tramo recortado para que
+    // volva ao inicio ao chegar ao fin (en vez de seguir avanzando).
+    let pos = prog?.position ?? 0;
+    if (prog) {
+      const v = prog.voice;
+      if (v.loop && v.segment > 0) {
+        const elapsed = prog.position - v.offset;
+        pos = v.offset + (elapsed % v.segment);
+      }
+    }
+
+    const progress = prog && d ? Math.min(pos / d, 1) : undefined;
     drawWaveform(canvas, pad.peaks, { progress, trim: trimFraction() });
-    timeEl.textContent = `${formatTime(prog?.position ?? 0)} / ${formatTime(d)}`;
+    timeEl.textContent = `${formatTime(pos)} / ${formatTime(d)}`;
     playBtn.textContent = isPlaying(pad.key) ? "■" : "▶";
     positionHandles();
   }
@@ -135,6 +157,25 @@ export function createBottomBar(root: HTMLElement, deps: BottomDeps): BottomBar 
   );
   holdEl.addEventListener("change", () => persist({ hold: holdEl.checked }));
   loopEl.addEventListener("change", () => persist({ loop: loopEl.checked }));
+
+  // Renomear o pad.
+  nameInput.addEventListener("input", () =>
+    persist({ displayName: nameInput.value }),
+  );
+  // Cambiar a cor do pad.
+  for (const btn of colorBtns) {
+    btn.addEventListener("click", () => {
+      const color = btn.dataset.color!;
+      persist({ color });
+      markColor(color);
+    });
+  }
+
+  function markColor(color: string | null) {
+    for (const btn of colorBtns) {
+      btn.classList.toggle("active", btn.dataset.color === color);
+    }
+  }
 
   $<HTMLButtonElement>(".bb-mark-start").addEventListener("click", () => {
     const prog = pad && activeProgress(pad.key);
@@ -186,7 +227,11 @@ export function createBottomBar(root: HTMLElement, deps: BottomDeps): BottomBar 
   });
 
   function fill(p: Pad) {
-    nameEl.textContent = p.displayName ?? p.key;
+    // Non sobreescribimos mentres o usuario está escribindo no campo.
+    if (document.activeElement !== nameInput) {
+      nameInput.value = p.displayName ?? p.key;
+    }
+    markColor(p.color);
     volEl.value = String(p.volume);
     modeEl.value = p.mode;
     holdEl.checked = p.hold;

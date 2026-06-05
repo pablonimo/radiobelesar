@@ -14,12 +14,31 @@ const ctx = new AudioContext({ latencyHint: "interactive" });
 const buffers = new Map<string, AudioBuffer>();
 
 interface Voice {
+  id: number; // identificador único da reprodución (para a lista de activos)
+  key: string;
+  name: string; // nome a mostrar
+  color: string; // cor da categoría
   src: AudioBufferSourceNode;
   gain: GainNode;
   startedAt: number; // ctx.currentTime no momento de start
   offset: number; // segundo de inicio dentro do buffer
+  segment: number; // duración do tramo que soa (segundos)
+  loop: boolean;
+  fade: boolean; // se se detén con fundido de saída
 }
 const voices = new Map<string, Set<Voice>>();
+const voiceById = new Map<number, Voice>();
+let voiceCounter = 0;
+
+/** Info dunha reprodución activa para a columna de "Activos". */
+export interface ActiveVoice {
+  id: number;
+  key: string;
+  name: string;
+  color: string;
+  progress: number; // 0..1
+  loop: boolean;
+}
 
 const FADE_SECONDS = 0.6;
 const MIN_GAIN = 0.0001;
@@ -124,16 +143,30 @@ export function start(pad: Pad): Voice | null {
     gain.gain.setValueAtTime(target, ctx.currentTime);
   }
 
-  const voice: Voice = { src, gain, startedAt: ctx.currentTime, offset };
+  const voice: Voice = {
+    id: ++voiceCounter,
+    key: pad.key,
+    name: pad.displayName ?? pad.key,
+    color: pad.color ?? "verde",
+    src,
+    gain,
+    startedAt: ctx.currentTime,
+    offset,
+    segment,
+    loop: pad.loop,
+    fade: pad.mode === "fundido",
+  };
   let set = voices.get(pad.key);
   if (!set) {
     set = new Set();
     voices.set(pad.key, set);
   }
   set.add(voice);
+  voiceById.set(voice.id, voice);
 
   src.onended = () => {
     set!.delete(voice);
+    voiceById.delete(voice.id);
     changeListener(pad.key);
   };
 
@@ -157,6 +190,37 @@ export function stopAll(): void {
   for (const key of voices.keys()) {
     stop(key, false);
   }
+}
+
+/** Detén unha reprodución concreta polo seu id (X na columna de activos). */
+export function stopVoiceById(id: number): void {
+  const voice = voiceById.get(id);
+  if (voice) release(voice, voice.fade);
+}
+
+/** Lista das reproducións activas, ordenadas da máis antiga á máis recente. */
+export function listActiveVoices(): ActiveVoice[] {
+  const now = ctx.currentTime;
+  const out: ActiveVoice[] = [];
+  for (const voice of voiceById.values()) {
+    const elapsed = Math.max(0, now - voice.startedAt);
+    let progress = 0;
+    if (voice.segment > 0) {
+      progress = voice.loop
+        ? (elapsed % voice.segment) / voice.segment
+        : Math.min(elapsed / voice.segment, 1);
+    }
+    out.push({
+      id: voice.id,
+      key: voice.key,
+      name: voice.name,
+      color: voice.color,
+      progress,
+      loop: voice.loop,
+    });
+  }
+  out.sort((a, b) => a.id - b.id);
+  return out;
 }
 
 function release(voice: Voice, fade: boolean): void {

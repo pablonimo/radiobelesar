@@ -31,6 +31,7 @@
     <div id="app" hidden>
       <header class="topbar">
         <div class="brand">
+          <img class="brand-logo" src="/logo.svg" width="40" height="40" alt="CEIP Belesar" />
           <strong>Radio Belesar</strong>
           <span>— A voz da infancia</span>
         </div>
@@ -40,7 +41,13 @@
         </div>
       </header>
 
-      <main id="grid" class="grid" aria-label="Mesa de son"></main>
+      <div class="body">
+        <main id="grid" class="grid" aria-label="Mesa de son"></main>
+        <aside id="active" class="active-col" aria-label="Audios activos">
+          <h2 class="active-title">Activos</h2>
+          <div id="active-list" class="active-list"></div>
+        </aside>
+      </div>
 
       <footer id="bottombar" class="bottombar" hidden></footer>
     </div>

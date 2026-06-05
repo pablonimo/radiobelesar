@@ -15,6 +15,7 @@ import { buildGrid } from "./ui/grid.js";
 import { renderPadContent, setPadState } from "./ui/pad.js";
 import { attachKeyboard } from "./ui/keyboard.js";
 import { createBottomBar, type BottomBar } from "./ui/bottombar.js";
+import { createActiveList } from "./ui/activelist.js";
 import { getPad, setPad, state } from "./state.js";
 
 const el = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as T;
@@ -77,6 +78,7 @@ async function startApp() {
     onPress: handlePress,
     onRelease: handleRelease,
     onSelect: selectPad,
+    onDropFile: assignFile,
   });
 
   bottomBar = createBottomBar(bottomEl, {
@@ -88,6 +90,8 @@ async function startApp() {
   });
 
   attachKeyboard({ onPress: handlePress, onRelease: handleRelease });
+
+  createActiveList(el<HTMLElement>("#active-list"));
 
   onVoicesChange((key) => {
     const e = padEls.get(key);
@@ -183,6 +187,17 @@ async function onFileChosen() {
   const key = pendingUploadKey;
   pendingUploadKey = null;
   if (!file || !key) return;
+  await assignFile(key, file);
+}
+
+// Asigna un ficheiro de audio a un pad: decodifica (onda + duración), súbeo e cachea o buffer.
+// Úsano tanto o diálogo de ficheiro como o arrastrar-e-soltar.
+async function assignFile(key: string, file: File) {
+  if (!getPad(key)) return;
+  if (file.type && !file.type.startsWith("audio/")) {
+    alert("O ficheiro non é de audio.");
+    return;
+  }
 
   const e = padEls.get(key);
   if (e) setPadState(e, { loading: true });
@@ -241,6 +256,6 @@ window.addEventListener("keydown", (ev) => {
   }
 });
 
-// =============================================================================
-// Radio Belesar — A voz da infancia. Punto de entrada da aplicación (frontend).
-// =============================================================================
+// Evitamos que soltar un ficheiro fóra dun pad o abra no navegador.
+window.addEventListener("dragover", (ev) => ev.preventDefault());
+window.addEventListener("drop", (ev) => ev.preventDefault());

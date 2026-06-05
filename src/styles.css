@@ -101,6 +101,18 @@ button {
   background: var(--verde);
   color: var(--crema);
 }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--crema);
+  flex: 0 0 auto;
+}
 .brand strong {
   font-size: 1.2rem;
 }
@@ -206,6 +218,12 @@ button {
 .pad.selected {
   border-color: var(--mostaza);
 }
+.pad.dragover {
+  border-style: solid;
+  border-color: var(--verde);
+  background: #d4e8e6;
+  transform: scale(1.03);
+}
 .pad.playing {
   box-shadow: 0 0 0 3px var(--terracota), 0 0 18px var(--terracota);
 }
@@ -240,12 +258,51 @@ button {
 }
 .bb-info {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
   font-weight: 600;
 }
+.bb-name-input {
+  flex: 1;
+  min-width: 0;
+  max-width: 320px;
+  font: inherit;
+  font-weight: 600;
+  padding: 6px 10px;
+  border: 1px solid var(--gris);
+  border-radius: 8px;
+  background: #fff;
+}
+.bb-colors {
+  display: flex;
+  gap: 6px;
+}
+.bb-color {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  box-shadow: 0 1px 3px var(--sombra);
+}
+.bb-color[data-color="verde"] {
+  background: var(--verde);
+}
+.bb-color[data-color="mostaza"] {
+  background: var(--mostaza);
+}
+.bb-color[data-color="terracota"] {
+  background: var(--terracota);
+}
+.bb-color.active {
+  border-color: var(--tinta);
+  transform: scale(1.12);
+}
 .bb-time {
+  margin-left: auto;
   font-variant-numeric: tabular-nums;
   color: var(--verde);
+  font-weight: 600;
 }
 .bb-wave {
   position: relative;
@@ -400,10 +457,8 @@ button {
   background: var(--terracota);
 }
 .active-item.loop .active-progress {
-  /* indicación sutil de bucle */
   box-shadow: inset 0 0 0 1px var(--gris);
 }
-
 .active-x {
   position: absolute;
   top: 6px;
