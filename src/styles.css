@@ -487,12 +487,16 @@ button {
 /* A foto da radio escolar ao 50% de opacidade, co color crema debaixo.
    `cover` amplíaa para encher a pantalla sen que se vexan os bordos.
    Colócase detrás de todo o contido (z-index: -1). */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: url("/fondo.jpg") center center / cover no-repeat;
-  opacity: 0.5;
-  pointer-events: none;
+body {
+  /* Foto da radio escolar ao 50% sobre o crema. Como fondo do body, píntase
+     sempre detrás do contido; `cover` amplíaa para que non se vexan bordos. */
+  background-color: var(--crema);
+  background-image: linear-gradient(
+      rgba(244, 234, 213, 0.5),
+      rgba(244, 234, 213, 0.5)
+    ),
+    url("/fondo.jpg");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
 }

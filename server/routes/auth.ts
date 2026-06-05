@@ -14,7 +14,7 @@ function cookieOptions() {
     httpOnly: true,
     sameSite: "strict" as const,
     secure: IS_PROD,
-    maxAge: 60 * 60 * 24 * 30, // 30 días
+    maxAge: 60 * 60 * 24 * 365, // 1 ano (tableta de aula: non pide a clave cada vez)
   };
 }
 
