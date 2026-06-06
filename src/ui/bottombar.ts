@@ -11,6 +11,7 @@ import {
   trigger,
 } from "../audio/engine.js";
 import { drawWaveform, formatTime } from "../audio/waveform.js";
+import { swatch, parseColor, combine, type Intensity } from "../colors.js";
 
 export interface BottomDeps {
   onPadChanged: (pad: Pad) => void; // refrescar pad na grella + estado
@@ -34,16 +35,23 @@ export function createBottomBar(root: HTMLElement, deps: BottomDeps): BottomBar 
         autocapitalize="none" autocorrect="off" spellcheck="false"
         aria-label="Nome do son" maxlength="40" />
       <div class="bb-colors" role="group" aria-label="Cor do pad">
-        <button class="bb-color" data-color="verde" title="Verde"></button>
-        <button class="bb-color" data-color="verdeclaro" title="Verde claro"></button>
-        <button class="bb-color" data-color="turquesa" title="Turquesa"></button>
-        <button class="bb-color" data-color="azul" title="Azul"></button>
-        <button class="bb-color" data-color="violeta" title="Violeta"></button>
-        <button class="bb-color" data-color="rosa" title="Rosa"></button>
-        <button class="bb-color" data-color="vermello" title="Vermello"></button>
-        <button class="bb-color" data-color="laranxa" title="Laranxa"></button>
-        <button class="bb-color" data-color="mostaza" title="Mostaza"></button>
-        <button class="bb-color" data-color="terracota" title="Terracota"></button>
+        <div class="bb-hues">
+          <button class="bb-color bb-hue" data-hue="vermello" title="Vermello"></button>
+          <button class="bb-color bb-hue" data-hue="laranxa" title="Laranxa"></button>
+          <button class="bb-color bb-hue" data-hue="mostaza" title="Mostaza"></button>
+          <button class="bb-color bb-hue" data-hue="amarelo" title="Amarelo"></button>
+          <button class="bb-color bb-hue" data-hue="verdeclaro" title="Verde claro"></button>
+          <button class="bb-color bb-hue" data-hue="verde" title="Verde"></button>
+          <button class="bb-color bb-hue" data-hue="turquesa" title="Turquesa"></button>
+          <button class="bb-color bb-hue" data-hue="azul" title="Azul"></button>
+          <button class="bb-color bb-hue" data-hue="violeta" title="Violeta"></button>
+          <button class="bb-color bb-hue" data-hue="rosa" title="Rosa"></button>
+        </div>
+        <div class="bb-ints" aria-label="Intensidade">
+          <button class="bb-color bb-int" data-int="int" title="Intenso"></button>
+          <button class="bb-color bb-int" data-int="nor" title="Normal"></button>
+          <button class="bb-color bb-int" data-int="cla" title="Claro"></button>
+        </div>
       </div>
       <span class="bb-time"></span>
     </div>
@@ -79,9 +87,8 @@ export function createBottomBar(root: HTMLElement, deps: BottomDeps): BottomBar 
   const hStart = $<HTMLElement>(".bb-handle-start");
   const hEnd = $<HTMLElement>(".bb-handle-end");
   const nameInput = $<HTMLInputElement>(".bb-name-input");
-  const colorBtns = Array.from(
-    root.querySelectorAll(".bb-color"),
-  ) as HTMLButtonElement[];
+  const hueBtns = Array.from(root.querySelectorAll(".bb-hue")) as HTMLButtonElement[];
+  const intBtns = Array.from(root.querySelectorAll(".bb-int")) as HTMLButtonElement[];
   const timeEl = $<HTMLElement>(".bb-time");
   const playBtn = $<HTMLButtonElement>(".bb-play");
   const volEl = $<HTMLInputElement>(".bb-volume");
@@ -174,18 +181,31 @@ export function createBottomBar(root: HTMLElement, deps: BottomDeps): BottomBar 
   nameInput.addEventListener("input", () =>
     persist({ displayName: nameInput.value }),
   );
-  // Cambiar a cor do pad.
-  for (const btn of colorBtns) {
+  // Cambiar o ton e a intensidade da cor do pad.
+  for (const btn of hueBtns) {
+    btn.style.background = swatch(btn.dataset.hue!, "nor");
     btn.addEventListener("click", () => {
-      const color = btn.dataset.color!;
+      const { intensity } = parseColor(pad?.color ?? null);
+      const color = combine(btn.dataset.hue!, intensity);
+      persist({ color });
+      markColor(color);
+    });
+  }
+  for (const btn of intBtns) {
+    btn.addEventListener("click", () => {
+      const { hue } = parseColor(pad?.color ?? null);
+      const color = combine(hue, btn.dataset.int as Intensity);
       persist({ color });
       markColor(color);
     });
   }
 
   function markColor(color: string | null) {
-    for (const btn of colorBtns) {
-      btn.classList.toggle("active", btn.dataset.color === color);
+    const { hue, intensity } = parseColor(color);
+    for (const btn of hueBtns) btn.classList.toggle("active", btn.dataset.hue === hue);
+    for (const btn of intBtns) {
+      btn.classList.toggle("active", btn.dataset.int === intensity);
+      btn.style.background = swatch(hue, btn.dataset.int as Intensity);
     }
   }
 
