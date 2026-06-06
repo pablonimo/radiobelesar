@@ -155,10 +155,8 @@ button {
   aspect-ratio: 1.6 / 1; /* o ancho nunca é menor que o alto */
   padding: clamp(3px, 0.6vw, 8px);
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: clamp(2px, 0.5vw, 5px);
   text-align: center;
   background: #fff;
   border: clamp(2px, 0.3vw, 3px) solid transparent;
@@ -186,20 +184,23 @@ button {
 }
 
 .pad-key {
-  flex: 0 0 auto;
-  font-size: clamp(0.46rem, 1.3vw, 0.72rem);
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-size: clamp(0.4rem, 1.2vw, 0.7rem);
   font-weight: 700;
   text-transform: uppercase;
   border: 1px solid currentColor;
-  border-radius: 5px;
-  padding: 0 clamp(2px, 0.5vw, 5px);
-  line-height: 1.35;
-  opacity: 0.7;
+  border-radius: 4px;
+  padding: 0 clamp(1px, 0.4vw, 4px);
+  line-height: 1.3;
+  opacity: 0.6;
 }
 .pad-name {
   font-size: clamp(0.5rem, 1.45vw, 0.95rem);
   font-weight: 600;
   line-height: 1.05;
+  max-width: 100%;
   overflow: hidden; /* o texto que non cabe queda oculto */
   word-break: break-word;
 }
@@ -535,7 +536,8 @@ body {
 .social a:hover {
   filter: brightness(1.08);
 }
-.social svg {
+.social svg,
+.social img {
   width: 30px;
   height: 30px;
   display: block;
