@@ -756,14 +756,13 @@ body.edit-mode .quote {
   /* Rexilla que enche a pantalla; filas de altura UNIFORME (sen solapes) */
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
-    grid-auto-rows: 4.3rem;
-    align-content: start;
-    gap: 6px;
-    padding: 6px;
+    grid-template-columns: repeat(5, 1fr); /* 5 botóns por fila */
+    grid-auto-rows: 1fr; /* as filas repártense a altura: enchen sen scroll */
+    gap: 5px;
+    padding: 5px;
     flex: 1 1 auto;
     min-height: 0;
-    overflow-y: auto;
+    overflow: hidden;
   }
   .grid-row {
     display: contents;
@@ -773,16 +772,15 @@ body.edit-mode .quote {
     min-height: 0;
   }
   .pad-key {
-    font-size: 0.58rem;
+    font-size: 0.54rem;
   }
   .pad-name {
-    font-size: 0.76rem;
-    line-height: 1.1;
+    font-size: 0.7rem;
+    line-height: 1.08;
   }
   .pad-space {
     grid-column: 1 / -1;
     aspect-ratio: auto;
-    height: 42px;
   }
   .active-col {
     flex: 0 0 auto;
