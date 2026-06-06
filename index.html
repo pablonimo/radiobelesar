@@ -11,32 +11,58 @@
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <!-- Pantalla de acceso -->
-    <div id="login" class="login-overlay">
+    <!-- Modal de clave (só para entrar no modo de edición) -->
+    <div id="login" class="login-overlay" hidden>
       <form id="login-form" class="login-card" autocomplete="off">
-        <h1>Radio Belesar</h1>
-        <p class="tagline">A voz da infancia</p>
+        <h1>Modificar</h1>
+        <p class="tagline">Introduce a clave para editar os sons</p>
         <input
           id="login-password"
           type="password"
-          placeholder="Clave de acceso"
-          aria-label="Clave de acceso"
+          placeholder="Clave"
+          aria-label="Clave"
+          autocapitalize="none"
+          autocorrect="off"
+          spellcheck="false"
         />
         <button type="submit">Entrar</button>
+        <button type="button" id="login-cancel" class="ghost-dark">Cancelar</button>
         <p id="login-error" class="error" hidden></p>
       </form>
     </div>
 
-    <!-- Aplicación -->
-    <div id="app" hidden>
+    <!-- Aplicación (usable sen clave) -->
+    <div id="app">
       <header class="topbar">
         <div class="brand">
           <img class="brand-logo" src="/logo.svg" width="40" height="40" alt="CEIP Belesar" />
           <strong>Radio Belesar</strong>
-          <span>— A voz da infancia</span>
+          <span class="brand-tag">— A voz da infancia</span>
         </div>
         <div class="topbar-actions">
-          <button id="btn-password" class="ghost" title="Cambiar a clave">Clave</button>
+          <a
+            class="school-link"
+            href="http://www.edu.xunta.gal/centros/ceipbelesar"
+            target="_blank"
+            rel="noopener"
+            >CEIP Plurilíngüe de Belesar (Baiona)</a
+          >
+          <nav class="social" aria-label="Redes sociais">
+            <a href="https://www.instagram.com/ceip.belesar/" target="_blank" rel="noopener" title="Instagram" aria-label="Instagram">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.2c3.2 0 3.6 0 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s0 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58 0-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.7 3.7 0 0 1-1.38-.9 3.7 3.7 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23C2.21 15.58 2.2 15.2 2.2 12s0-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.21 8.8 2.2 12 2.2Zm0 1.8c-3.15 0-3.5.01-4.74.07-.9.04-1.38.19-1.7.32-.43.16-.74.36-1.06.68-.32.32-.52.63-.68 1.06-.13.32-.28.8-.32 1.7C3.21 8.5 3.2 8.85 3.2 12s.01 3.5.07 4.74c.04.9.19 1.38.32 1.7.16.43.36.74.68 1.06.32.32.63.52 1.06.68.32.13.8.28 1.7.32 1.24.06 1.59.07 4.74.07s3.5-.01 4.74-.07c.9-.04 1.38-.19 1.7-.32.43-.16.74-.36 1.06-.68.32-.32.52-.63.68-1.06.13-.32.28-.8.32-1.7.06-1.24.07-1.59.07-4.74s-.01-3.5-.07-4.74c-.04-.9-.19-1.38-.32-1.7a2.85 2.85 0 0 0-.68-1.06 2.85 2.85 0 0 0-1.06-.68c-.32-.13-.8-.28-1.7-.32C15.5 4.01 15.15 4 12 4Zm0 3.05A4.95 4.95 0 1 1 7.05 12 4.96 4.96 0 0 1 12 7.05Zm0 1.8A3.15 3.15 0 1 0 15.15 12 3.15 3.15 0 0 0 12 8.85Zm5.15-3.2a1.15 1.15 0 1 1-1.15 1.15 1.15 1.15 0 0 1 1.15-1.15Z"/></svg>
+            </a>
+            <a href="https://whatsapp.com/channel/0029VaCFs4r7DAWrmGoz1X0e" target="_blank" rel="noopener" title="WhatsApp" aria-label="WhatsApp">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.06L2 22l5.07-1.33A10 10 0 1 0 12 2Zm0 1.8a8.2 8.2 0 0 1 6.94 12.57.9.9 0 0 0-.12.7l.6 2.2-2.26-.59a.9.9 0 0 0-.68.1A8.2 8.2 0 1 1 12 3.8Zm-3.2 3.7c-.17 0-.45.06-.68.31-.23.25-.9.88-.9 2.15s.92 2.5 1.05 2.67c.13.17 1.8 2.86 4.46 3.9 2.2.87 2.65.7 3.13.65.48-.04 1.55-.63 1.77-1.25.22-.61.22-1.14.16-1.25-.07-.11-.25-.17-.52-.3-.27-.14-1.55-.77-1.79-.85-.24-.09-.41-.13-.59.13-.17.25-.67.85-.82 1.02-.15.18-.3.2-.56.07-.27-.14-1.12-.42-2.14-1.32-.79-.7-1.32-1.57-1.48-1.84-.15-.26-.02-.4.12-.53.12-.12.27-.31.4-.46.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.48-.07-.13-.59-1.45-.83-1.98-.2-.46-.41-.4-.56-.4Z"/></svg>
+            </a>
+            <a href="https://www.ivoox.com/escuchar-audios-biblioteca-ceip-belesar_al_33276486_1.html?show=programs" target="_blank" rel="noopener" title="iVoox" aria-label="iVoox">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><path fill="#fff" d="M8 8h1.7v8H8zm6.3 0H16v8h-1.7zm-3.15 2.2h1.7v3.6h-1.7z"/></svg>
+            </a>
+            <a href="https://www.youtube.com/@ceipbelesarbaiona" target="_blank" rel="noopener" title="YouTube" aria-label="YouTube">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M23 12s0-3.2-.4-4.74a2.5 2.5 0 0 0-1.76-1.77C19.3 5.1 12 5.1 12 5.1s-7.3 0-8.84.39A2.5 2.5 0 0 0 1.4 7.26C1 8.8 1 12 1 12s0 3.2.4 4.74a2.5 2.5 0 0 0 1.76 1.77C4.7 18.9 12 18.9 12 18.9s7.3 0 8.84-.39a2.5 2.5 0 0 0 1.76-1.77C23 15.2 23 12 23 12ZM9.75 15.02V8.98L15.5 12Z"/></svg>
+            </a>
+          </nav>
+          <button id="btn-password" class="ghost edit-only" title="Cambiar a clave">Clave</button>
+          <button id="btn-modify" class="ghost" title="Modificar os sons">Modificar</button>
           <button id="btn-panic" class="panic" title="Parar todos os sons">■ Parar todo</button>
         </div>
       </header>
@@ -48,6 +74,8 @@
           <div id="active-list" class="active-list"></div>
         </aside>
       </div>
+
+      <p id="quote" class="quote" aria-hidden="true"></p>
 
       <footer id="bottombar" class="bottombar" hidden></footer>
     </div>

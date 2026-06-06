@@ -1,4 +1,4 @@
-import { checkSession, changePassword, fetchPads, login, uploadSound } from "./api/client.js";
+import { changePassword, fetchPads, login, uploadSound } from "./api/client.js";
 import {
   audioContext,
   loadBuffer,
@@ -16,6 +16,7 @@ import { renderPadContent, setPadState } from "./ui/pad.js";
 import { attachKeyboard } from "./ui/keyboard.js";
 import { createBottomBar, type BottomBar } from "./ui/bottombar.js";
 import { createActiveList } from "./ui/activelist.js";
+import { randomQuote } from "./quotes.js";
 import { getPad, setPad, state } from "./state.js";
 
 const el = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as T;
@@ -24,14 +25,16 @@ const loginOverlay = el<HTMLElement>("#login");
 const loginForm = el<HTMLFormElement>("#login-form");
 const loginInput = el<HTMLInputElement>("#login-password");
 const loginError = el<HTMLElement>("#login-error");
-const appEl = el<HTMLElement>("#app");
+const loginCancel = el<HTMLButtonElement>("#login-cancel");
 const gridEl = el<HTMLElement>("#grid");
 const bottomEl = el<HTMLElement>("#bottombar");
+const quoteEl = el<HTMLElement>("#quote");
 
 let padEls = new Map<string, HTMLElement>();
 let bottomBar: BottomBar;
 let pendingUploadKey: string | null = null;
-let appStarted = false; // evita arrancar a app (e os seus bucles) dúas veces
+let editMode = false;
+let started = false;
 
 // Input de ficheiro oculto, reutilizado para subir/substituír.
 const fileInput = document.createElement("input");
@@ -41,38 +44,19 @@ fileInput.hidden = true;
 document.body.appendChild(fileInput);
 
 // ---------------------------------------------------------------------------
-// Arranque
+// Arranque: a app é usable SEN clave. A clave só activa o modo de edición.
 // ---------------------------------------------------------------------------
 init();
 
 async function init() {
-  if (await checkSession()) {
-    loginOverlay.hidden = true;
-    await startApp();
-  } else {
-    loginOverlay.hidden = false;
-    loginInput.focus();
-  }
+  // A app arranca SEMPRE en modo uso (sen clave). Para editar hai que premer
+  // "Modificar" e introducir a clave; así o alumnado non pode modificar nada.
+  await startApp();
 }
 
-loginForm.addEventListener("submit", async (ev) => {
-  ev.preventDefault();
-  loginError.hidden = true;
-  try {
-    await resume(); // o submit é un xesto válido para activar o audio
-    await login(loginInput.value);
-    loginOverlay.hidden = true;
-    await startApp();
-  } catch (e) {
-    loginError.textContent = (e as Error).message || "Non se puido entrar";
-    loginError.hidden = false;
-  }
-});
-
 async function startApp() {
-  if (appStarted) return;
-  appStarted = true;
-  appEl.hidden = false;
+  if (started) return;
+  started = true;
 
   const pads = await fetchPads();
   state.pads.clear();
@@ -81,7 +65,7 @@ async function startApp() {
   padEls = buildGrid(gridEl, {
     onPress: handlePress,
     onRelease: handleRelease,
-    onSelect: selectPad,
+    onSelect: handleSelect,
     onDropFile: assignFile,
   });
 
@@ -94,7 +78,6 @@ async function startApp() {
   });
 
   attachKeyboard({ onPress: handlePress, onRelease: handleRelease });
-
   createActiveList(el<HTMLElement>("#active-list"));
 
   onVoicesChange((key) => {
@@ -103,30 +86,91 @@ async function startApp() {
   });
 
   el<HTMLButtonElement>("#btn-panic").addEventListener("click", () => stopAll());
+  el<HTMLButtonElement>("#btn-modify").addEventListener("click", onModifyClick);
   el<HTMLButtonElement>("#btn-password").addEventListener("click", doChangePassword);
   fileInput.addEventListener("change", onFileChosen);
+
+  // Modal de clave para edición.
+  loginForm.addEventListener("submit", onLoginSubmit);
+  loginCancel.addEventListener("click", () => (loginOverlay.hidden = true));
+
+  // Frase do pé (só visible se hai espazo; cámbiase cada pouco).
+  rotateQuote();
+  window.setInterval(rotateQuote, 12000);
 
   preloadAll();
 }
 
+function rotateQuote() {
+  quoteEl.textContent = randomQuote();
+}
+
 // ---------------------------------------------------------------------------
-// Disparo
+// Modo de edición
+// ---------------------------------------------------------------------------
+function setEditMode(on: boolean) {
+  editMode = on;
+  document.body.classList.toggle("edit-mode", on);
+  el<HTMLButtonElement>("#btn-modify").textContent = on ? "Saír de edición" : "Modificar";
+  if (!on) {
+    bottomBar.hide();
+    if (state.selectedKey) {
+      const e = padEls.get(state.selectedKey);
+      if (e) setPadState(e, { selected: false });
+      state.selectedKey = null;
+    }
+  }
+}
+
+async function onModifyClick() {
+  if (editMode) {
+    await fetch("/api/logout", { method: "POST", credentials: "include" }).catch(() => {});
+    setEditMode(false);
+  } else {
+    loginError.hidden = true;
+    loginInput.value = "";
+    loginOverlay.hidden = false;
+    loginInput.focus();
+  }
+}
+
+async function onLoginSubmit(ev: Event) {
+  ev.preventDefault();
+  loginError.hidden = true;
+  try {
+    await resume();
+    await login(loginInput.value);
+    loginOverlay.hidden = true;
+    setEditMode(true);
+  } catch (e) {
+    loginError.textContent = (e as Error).message || "Clave incorrecta";
+    loginError.hidden = false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Disparo (sempre dispoñible) e selección (só en edición)
 // ---------------------------------------------------------------------------
 function handlePress(key: string) {
   void resume();
   const pad = getPad(key);
   if (!pad) return;
-  selectPad(key);
-  if (!pad.soundFile) {
-    openFileDialog(key);
+  if (editMode) selectPad(key);
+  if (pad.soundFile) {
+    trigger(pad);
     return;
   }
-  trigger(pad);
+  if (editMode) openFileDialog(key); // pad baleiro: só en edición se pode subir
 }
 
 function handleRelease(key: string) {
   const pad = getPad(key);
   if (pad?.hold) stop(key, false);
+}
+
+// Selección por toque/rato (pad.ts): só ten efecto en edición.
+function handleSelect(key: string) {
+  if (editMode) selectPad(key);
 }
 
 function selectPad(key: string) {
@@ -146,7 +190,7 @@ function selectPad(key: string) {
 
 function showBottomBarFor(key: string) {
   const pad = getPad(key);
-  if (pad?.soundFile) bottomBar.show(pad);
+  if (editMode && pad?.soundFile) bottomBar.show(pad);
   else bottomBar.hide();
 }
 
@@ -178,9 +222,10 @@ async function preloadAll() {
 }
 
 // ---------------------------------------------------------------------------
-// Subir / substituír sons
+// Subir / substituír sons (só en edición)
 // ---------------------------------------------------------------------------
 function openFileDialog(key: string) {
+  if (!editMode) return;
   pendingUploadKey = key;
   fileInput.value = "";
   fileInput.click();
@@ -194,9 +239,8 @@ async function onFileChosen() {
   await assignFile(key, file);
 }
 
-// Asigna un ficheiro de audio a un pad: decodifica (onda + duración), súbeo e cachea o buffer.
-// Úsano tanto o diálogo de ficheiro como o arrastrar-e-soltar.
 async function assignFile(key: string, file: File) {
+  if (!editMode) return;
   if (!getPad(key)) return;
   if (file.type && !file.type.startsWith("audio/")) {
     alert("O ficheiro non é de audio.");
@@ -225,7 +269,6 @@ async function assignFile(key: string, file: File) {
       displayName: file.name.replace(/\.[^.]+$/, ""),
     });
     setPad(pad);
-    // Se xa decodificamos, cacheamos o buffer => primeiro disparo inmediato.
     if (decoded) setBuffer(key, decoded);
     else if (pad.audioUrl) await loadBuffer(key, pad.audioUrl);
     updateGridPad(key);
@@ -238,7 +281,7 @@ async function assignFile(key: string, file: File) {
 }
 
 // ---------------------------------------------------------------------------
-// Cambio de clave
+// Cambio de clave (só en edición)
 // ---------------------------------------------------------------------------
 async function doChangePassword() {
   const current = prompt("Clave actual:");

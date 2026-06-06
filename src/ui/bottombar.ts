@@ -5,6 +5,7 @@ import {
   clearBuffer,
   getBuffer,
   isPlaying,
+  setVolume,
   start,
   stop,
   trigger,
@@ -34,6 +35,13 @@ export function createBottomBar(root: HTMLElement, deps: BottomDeps): BottomBar 
         aria-label="Nome do son" maxlength="40" />
       <div class="bb-colors" role="group" aria-label="Cor do pad">
         <button class="bb-color" data-color="verde" title="Verde"></button>
+        <button class="bb-color" data-color="verdeclaro" title="Verde claro"></button>
+        <button class="bb-color" data-color="turquesa" title="Turquesa"></button>
+        <button class="bb-color" data-color="azul" title="Azul"></button>
+        <button class="bb-color" data-color="violeta" title="Violeta"></button>
+        <button class="bb-color" data-color="rosa" title="Rosa"></button>
+        <button class="bb-color" data-color="vermello" title="Vermello"></button>
+        <button class="bb-color" data-color="laranxa" title="Laranxa"></button>
         <button class="bb-color" data-color="mostaza" title="Mostaza"></button>
         <button class="bb-color" data-color="terracota" title="Terracota"></button>
       </div>
@@ -151,7 +159,11 @@ export function createBottomBar(root: HTMLElement, deps: BottomDeps): BottomBar 
 
   // ---- Eventos dos controis ----
   playBtn.addEventListener("click", () => pad && trigger(pad));
-  volEl.addEventListener("input", () => persist({ volume: Number(volEl.value) }));
+  volEl.addEventListener("input", () => {
+    const v = Number(volEl.value);
+    if (pad) setVolume(pad.key, v); // aplica o volume en directo ás voces que soan
+    persist({ volume: v });
+  });
   modeEl.addEventListener("change", () =>
     persist({ mode: modeEl.value as Pad["mode"] }),
   );

@@ -198,6 +198,18 @@ export function stopVoiceById(id: number): void {
   if (voice) release(voice, voice.fade);
 }
 
+/** Aplica un volume novo EN DIRECTO a todas as voces activas dun pad. */
+export function setVolume(key: string, volume: number): void {
+  const set = voices.get(key);
+  if (!set) return;
+  const t = ctx.currentTime;
+  const v = Math.max(volume, 0);
+  for (const voice of set) {
+    voice.gain.gain.cancelScheduledValues(t);
+    voice.gain.gain.setValueAtTime(v, t);
+  }
+}
+
 /** Lista das reproducións activas, ordenadas da máis antiga á máis recente. */
 export function listActiveVoices(): ActiveVoice[] {
   const now = ctx.currentTime;

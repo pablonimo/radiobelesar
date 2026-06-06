@@ -37,14 +37,11 @@ async function removeFile(soundFile: string | null): Promise<void> {
 }
 
 const routes: FastifyPluginAsync = async (app) => {
-  // Todo o que segue require sesión.
-  app.addHook("onRequest", requireSession);
-
-  // Conxunto completo de pads.
+  // A lista de pads é PÚBLICA (a app úsase sen clave; a clave só protexe a edición).
   app.get("/pads", async () => ({ pads: getAllPads() }));
 
   // Subir / substituír o son dun pad (multipart: ficheiro + campos).
-  app.post("/pads/:key/sound", async (req, reply) => {
+  app.post("/pads/:key/sound", { preHandler: requireSession }, async (req, reply) => {
     const { key } = req.params as { key: string };
     if (!isValidKey(key)) return reply.code(404).send({ error: "Tecla descoñecida" });
 
@@ -94,7 +91,7 @@ const routes: FastifyPluginAsync = async (app) => {
   });
 
   // Actualizar a configuración dun pad (volume, modo, recorte, etc.).
-  app.put("/pads/:key", async (req, reply) => {
+  app.put("/pads/:key", { preHandler: requireSession }, async (req, reply) => {
     const { key } = req.params as { key: string };
     const row = getPad(key);
     if (!row) return reply.code(404).send({ error: "Tecla descoñecida" });
@@ -136,7 +133,7 @@ const routes: FastifyPluginAsync = async (app) => {
   });
 
   // Baleirar un pad (borra ficheiro e configuración).
-  app.delete("/pads/:key/sound", async (req, reply) => {
+  app.delete("/pads/:key/sound", { preHandler: requireSession }, async (req, reply) => {
     const { key } = req.params as { key: string };
     const row = getPad(key);
     if (!row) return reply.code(404).send({ error: "Tecla descoñecida" });

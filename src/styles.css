@@ -140,26 +140,27 @@ button {
 .grid {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px;
+  gap: clamp(3px, 0.8vw, 10px);
+  padding: clamp(4px, 1.2vw, 16px);
 }
 .grid-row {
   display: flex;
-  gap: 10px;
+  gap: clamp(3px, 0.8vw, 10px);
   justify-content: center;
 }
 .pad {
   position: relative;
   flex: 1 1 0;
-  min-height: 84px;
-  padding: 8px;
+  min-width: 0;
+  aspect-ratio: 1.6 / 1; /* o ancho nunca é menor que o alto */
+  padding: clamp(2px, 0.6vw, 8px);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: space-between;
   background: #fff;
-  border: 3px solid transparent;
-  border-radius: var(--radio);
+  border: clamp(2px, 0.3vw, 3px) solid transparent;
+  border-radius: clamp(6px, 1vw, 14px);
   box-shadow: 0 2px 8px var(--sombra);
   color: var(--tinta);
   transition: transform 0.05s, box-shadow 0.1s;
@@ -167,21 +168,14 @@ button {
 }
 .pad-space {
   flex: 1 1 100%;
-  min-height: 60px;
+  aspect-ratio: auto;
+  height: clamp(26px, 6vh, 64px);
+  min-height: 0;
 }
 .pad:active {
   transform: scale(0.97);
 }
 
-.pad[data-color="verde"] {
-  background: #e3efee;
-}
-.pad[data-color="mostaza"] {
-  background: #f6ecd2;
-}
-.pad[data-color="terracota"] {
-  background: #f3ddd0;
-}
 .pad.empty {
   background: #fff;
   border-style: dashed;
@@ -190,19 +184,21 @@ button {
 }
 
 .pad-key {
-  font-size: 0.7rem;
+  font-size: clamp(0.42rem, 1.3vw, 0.7rem);
   font-weight: 700;
   opacity: 0.55;
   text-transform: uppercase;
 }
 .pad-name {
-  font-size: 0.95rem;
+  font-size: clamp(0.5rem, 1.45vw, 0.95rem);
   font-weight: 600;
-  line-height: 1.1;
+  line-height: 1.05;
+  width: 100%;
+  overflow: hidden; /* o texto que non cabe queda oculto */
   word-break: break-word;
 }
 .pad-add {
-  font-size: 0.85rem;
+  font-size: clamp(0.5rem, 1.3vw, 0.85rem);
   align-self: center;
   margin: auto 0;
 }
@@ -285,15 +281,6 @@ button {
   border: 2px solid transparent;
   box-shadow: 0 1px 3px var(--sombra);
 }
-.bb-color[data-color="verde"] {
-  background: var(--verde);
-}
-.bb-color[data-color="mostaza"] {
-  background: var(--mostaza);
-}
-.bb-color[data-color="terracota"] {
-  background: var(--terracota);
-}
 .bb-color.active {
   border-color: var(--tinta);
   transform: scale(1.12);
@@ -375,7 +362,7 @@ button {
 }
 
 .active-col {
-  flex: 0 0 230px;
+  flex: 0 0 clamp(110px, 24vw, 230px);
   display: flex;
   flex-direction: column;
   border-left: 2px solid var(--crema-2);
@@ -411,15 +398,6 @@ button {
   transition: height 0.22s ease, opacity 0.18s ease, margin 0.22s ease,
     padding 0.22s ease;
 }
-.active-item[data-color="verde"] {
-  border-left-color: var(--verde);
-}
-.active-item[data-color="mostaza"] {
-  border-left-color: var(--mostaza);
-}
-.active-item[data-color="terracota"] {
-  border-left-color: var(--terracota);
-}
 .active-item.enter {
   animation: active-in 0.18s ease-out;
 }
@@ -436,7 +414,7 @@ button {
 
 .active-name {
   display: block;
-  font-size: 0.9rem;
+  font-size: clamp(0.72rem, 1.5vw, 0.9rem);
   font-weight: 600;
   line-height: 1.15;
   word-break: break-word;
@@ -453,12 +431,6 @@ button {
   width: 0%;
   background: var(--verde);
   transition: width 0.08s linear;
-}
-.active-item[data-color="mostaza"] .active-bar {
-  background: var(--mostaza);
-}
-.active-item[data-color="terracota"] .active-bar {
-  background: var(--terracota);
 }
 .active-item.loop .active-progress {
   box-shadow: inset 0 0 0 1px var(--gris);
@@ -499,4 +471,160 @@ body {
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
+}
+
+/* ---------- 10 cores das teclas ---------- */
+.pad[data-color="verde"] { background: #d9e9e7; }
+.bb-color[data-color="verde"] { background: #2a7f7a; }
+.active-item[data-color="verde"] { border-left-color: #2a7f7a; }
+.active-item[data-color="verde"] .active-bar { background: #2a7f7a; }
+.pad[data-color="verdeclaro"] { background: #e2efd8; }
+.bb-color[data-color="verdeclaro"] { background: #5a9e3f; }
+.active-item[data-color="verdeclaro"] { border-left-color: #5a9e3f; }
+.active-item[data-color="verdeclaro"] .active-bar { background: #5a9e3f; }
+.pad[data-color="turquesa"] { background: #d4eef1; }
+.bb-color[data-color="turquesa"] { background: #1c9fae; }
+.active-item[data-color="turquesa"] { border-left-color: #1c9fae; }
+.active-item[data-color="turquesa"] .active-bar { background: #1c9fae; }
+.pad[data-color="azul"] { background: #d9e5f2; }
+.bb-color[data-color="azul"] { background: #2f6fb0; }
+.active-item[data-color="azul"] { border-left-color: #2f6fb0; }
+.active-item[data-color="azul"] .active-bar { background: #2f6fb0; }
+.pad[data-color="violeta"] { background: #e8def1; }
+.bb-color[data-color="violeta"] { background: #7a52a8; }
+.active-item[data-color="violeta"] { border-left-color: #7a52a8; }
+.active-item[data-color="violeta"] .active-bar { background: #7a52a8; }
+.pad[data-color="rosa"] { background: #f6dbe8; }
+.bb-color[data-color="rosa"] { background: #c2477e; }
+.active-item[data-color="rosa"] { border-left-color: #c2477e; }
+.active-item[data-color="rosa"] .active-bar { background: #c2477e; }
+.pad[data-color="vermello"] { background: #f5dcd8; }
+.bb-color[data-color="vermello"] { background: #c0392b; }
+.active-item[data-color="vermello"] { border-left-color: #c0392b; }
+.active-item[data-color="vermello"] .active-bar { background: #c0392b; }
+.pad[data-color="laranxa"] { background: #f8e3d0; }
+.bb-color[data-color="laranxa"] { background: #d97a28; }
+.active-item[data-color="laranxa"] { border-left-color: #d97a28; }
+.active-item[data-color="laranxa"] .active-bar { background: #d97a28; }
+.pad[data-color="mostaza"] { background: #f6ecd2; }
+.bb-color[data-color="mostaza"] { background: #d8a531; }
+.active-item[data-color="mostaza"] { border-left-color: #d8a531; }
+.active-item[data-color="mostaza"] .active-bar { background: #d8a531; }
+.pad[data-color="terracota"] { background: #f3ddd0; }
+.bb-color[data-color="terracota"] { background: #c4622d; }
+.active-item[data-color="terracota"] { border-left-color: #c4622d; }
+.active-item[data-color="terracota"] .active-bar { background: #c4622d; }
+
+/* ---------- Cabeceira: nome do cole + redes sociais ---------- */
+.topbar {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.topbar-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.school-link {
+  align-self: center;
+  color: var(--crema);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.85rem;
+  opacity: 0.95;
+  max-width: 30ch;
+}
+.school-link:hover {
+  text-decoration: underline;
+}
+.social {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.social a {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  color: var(--crema);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.12);
+}
+.social a:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+.social svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+/* ---------- Visibilidade segundo o modo de edición ---------- */
+.edit-only {
+  display: none;
+}
+body.edit-mode .edit-only {
+  display: inline-flex;
+}
+.ghost-dark {
+  background: var(--crema-2) !important;
+  color: var(--tinta) !important;
+}
+
+/* Pad baleiro en modo uso (sen clave): non amosa "+ subir son" nin aviso */
+body:not(.edit-mode) .pad-add {
+  display: none;
+}
+body:not(.edit-mode) .pad.empty {
+  border-style: solid;
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.25);
+  cursor: default;
+}
+
+/* ---------- Frase do pé (só con espazo; sen recadro opaco) ---------- */
+.quote {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  margin: 0;
+  max-width: min(72vw, 780px);
+  text-align: center;
+  font-style: italic;
+  font-size: clamp(0.95rem, 1.35vw, 1.2rem);
+  color: var(--tinta);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9), 0 0 12px rgba(255, 255, 255, 0.75);
+  pointer-events: none;
+  opacity: 0.92;
+}
+/* Ocúltase se non hai espazo, ou ao editar (a barra inferior ocupa o pé). */
+@media (max-width: 1000px), (max-height: 720px) {
+  .quote {
+    display: none;
+  }
+}
+body.edit-mode .quote {
+  display: none;
+}
+
+/* ---------- Cabeceira en pantallas estreitas ---------- */
+@media (max-width: 760px) {
+  .brand-tag,
+  .school-link {
+    display: none;
+  }
+  .brand strong {
+    font-size: 1rem;
+  }
+  .topbar,
+  .panic {
+    padding: 8px 10px;
+  }
+}
+
+/* O pad baleiro mantense branco por riba da cor por defecto (en edición). */
+.pad.empty {
+  background: #fff;
 }

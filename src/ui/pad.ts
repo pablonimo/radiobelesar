@@ -35,13 +35,16 @@ export function createPadEl(pad: Pad, handlers: PadHandlers): HTMLElement {
   el.addEventListener("contextmenu", (ev) => ev.preventDefault());
 
   // Arrastrar e soltar un ficheiro de audio sobre o pad para asignalo.
+  const inEdit = () => document.body.classList.contains("edit-mode");
   el.addEventListener("dragover", (ev) => {
+    if (!inEdit()) return; // só se pode asignar en modo de edición
     ev.preventDefault();
     if (ev.dataTransfer) ev.dataTransfer.dropEffect = "copy";
     el.classList.add("dragover");
   });
   el.addEventListener("dragleave", () => el.classList.remove("dragover"));
   el.addEventListener("drop", (ev) => {
+    if (!inEdit()) return;
     ev.preventDefault();
     el.classList.remove("dragover");
     const file = ev.dataTransfer?.files?.[0];
