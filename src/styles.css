@@ -711,3 +711,59 @@ body.edit-mode .quote {
 .pad[data-color="rosa-cla"] { background: hsl(330 42% 94%); }
 .active-item[data-color="rosa-cla"] { border-left-color: hsl(330 60% 60%); }
 .active-item[data-color="rosa-cla"] .active-bar { background: hsl(330 60% 60%); }
+
+/* ============================================================
+   Móbil VERTICAL: rediseño que enche a pantalla.
+   Non se respecta a disposición de teclado (non hai teclado físico):
+   os pads reflúen nunha rexilla con botóns máis grandes.
+   ============================================================ */
+@media (orientation: portrait) and (max-width: 820px) {
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+  }
+  .body {
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    align-content: start;
+    gap: 6px;
+    padding: 6px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .grid-row {
+    display: contents; /* os pads pasan a ser celas da rexilla */
+  }
+  .pad {
+    aspect-ratio: 1 / 1; /* botóns cadrados máis grandes */
+  }
+  .pad-key {
+    font-size: 0.58rem;
+  }
+  .pad-name {
+    font-size: 0.78rem;
+  }
+  .pad-space {
+    grid-column: 1 / -1; /* a barra espazadora ocupa todo o ancho */
+    aspect-ratio: auto;
+    height: 46px;
+  }
+  /* "Activos" pasa a un panel inferior en vez dunha columna lateral */
+  .active-col {
+    flex: 0 0 auto;
+    max-height: 24vh;
+    border-left: none;
+    border-top: 2px solid var(--crema-2);
+  }
+  .active-title {
+    padding: 6px 12px 4px;
+  }
+}
