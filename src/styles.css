@@ -135,6 +135,53 @@ button {
   font-weight: 700;
   padding: 8px 16px;
 }
+/* Mentres funde: pulso visual; outra pulsación corta en seco. */
+.panic.fading {
+  animation: panic-pulse 0.4s ease-in-out infinite alternate;
+}
+@keyframes panic-pulse {
+  from {
+    filter: brightness(1);
+  }
+  to {
+    filter: brightness(1.4);
+  }
+}
+
+/* ---------- Bancos de sons ---------- */
+.banks {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px 0;
+}
+.banks-label {
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--verde);
+  margin-right: 2px;
+}
+.bank-btn {
+  min-width: 40px;
+  height: 34px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 2px solid var(--crema-2);
+  font-weight: 800;
+  color: var(--tinta);
+}
+.bank-btn.active {
+  background: var(--verde);
+  border-color: var(--verde);
+  color: #fff;
+}
+.banks-hint {
+  margin-left: 10px;
+  font-size: 0.75rem;
+  opacity: 0.55;
+}
 
 /* ---------- Grella de pads ---------- */
 .grid {
@@ -208,7 +255,7 @@ button {
 }
 .pad-icons {
   position: absolute;
-  bottom: 2px;
+  bottom: 7px;
   right: 3px;
   display: flex;
   gap: 3px;
@@ -216,6 +263,55 @@ button {
 }
 .pad-icons .ic {
   color: var(--verde);
+}
+
+/* ---------- Conta atrás e progreso no propio pad ---------- */
+.pad-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  pointer-events: none;
+}
+.pad-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--verde);
+  opacity: 0.9;
+}
+.pad-remaining {
+  position: absolute;
+  bottom: 6px;
+  left: 4px;
+  padding: 0 4px;
+  border-radius: 4px;
+  font-size: clamp(0.5rem, 1.1vw, 0.78rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--verde);
+  background: rgba(255, 255, 255, 0.78);
+  pointer-events: none;
+}
+/* Últimos 5 segundos: aviso para prepararse a entrar a falar. */
+.pad.ending {
+  border-color: var(--terracota);
+}
+.pad.ending .pad-remaining {
+  color: #fff;
+  background: var(--terracota);
+  animation: ending-pulse 0.6s ease-in-out infinite alternate;
+}
+.pad.ending .pad-bar {
+  background: var(--terracota);
+}
+@keyframes ending-pulse {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.55;
+  }
 }
 
 .pad.selected {
@@ -790,5 +886,15 @@ body.edit-mode .quote {
   }
   .active-title {
     padding: 6px 12px 4px;
+  }
+  .banks {
+    padding: 6px 8px 0;
+  }
+  .banks-hint {
+    display: none;
+  }
+  .bank-btn {
+    min-width: 36px;
+    height: 30px;
   }
 }

@@ -1,4 +1,5 @@
 import { listActiveVoices, stopVoiceById, type ActiveVoice } from "../audio/engine.js";
+import { escapeHtml } from "./html.js";
 
 // Columna de "Audios activos" (estilo Soundplant).
 //  - As novas reproducións engádense ao fondo da columna.
@@ -86,12 +87,4 @@ export function createActiveList(listEl: HTMLElement): void {
   }
 
   requestAnimationFrame(frame);
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(
-    /[&<>"']/g,
-    (c) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
-  );
 }

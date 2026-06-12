@@ -1,6 +1,7 @@
 export type PlayMode = "golpe" | "fundido";
 
 export interface Pad {
+  bank: number;
   key: string;
   soundFile: string | null;
   audioUrl: string | null;
@@ -26,20 +27,37 @@ export const KEY_ROWS: string[][] = [
   ["SPACE"],
 ];
 
+// Bancos: a fila de números (banco 0) é común; o resto cambia por banco.
+export const SHARED_KEYS = new Set(KEY_ROWS[0]);
+export const BANKS = [1, 2, 3, 4];
+
+/** Identificador único dun pad ("banco:tecla") — úsase como chave no motor de audio. */
+export function padId(pad: { bank: number; key: string }): string {
+  return `${pad.bank}:${pad.key}`;
+}
+
 export interface AppState {
-  pads: Map<string, Pad>;
+  pads: Map<string, Pad>; // chave: padId (banco:tecla)
   selectedKey: string | null;
+  bank: number; // banco visible (1..4)
 }
 
 export const state: AppState = {
   pads: new Map(),
   selectedKey: null,
+  bank: 1,
 };
 
+/** Banco efectivo dunha tecla: as compartidas viven sempre no banco 0. */
+export function bankFor(key: string): number {
+  return SHARED_KEYS.has(key) ? 0 : state.bank;
+}
+
+/** Pad VISIBLE asociado a unha tecla (tendo en conta o banco actual). */
 export function getPad(key: string): Pad | undefined {
-  return state.pads.get(key);
+  return state.pads.get(`${bankFor(key)}:${key}`);
 }
 
 export function setPad(pad: Pad): void {
-  state.pads.set(pad.key, pad);
+  state.pads.set(padId(pad), pad);
 }

@@ -1,4 +1,4 @@
-import { KEY_ROWS, state } from "../state.js";
+import { getPad, KEY_ROWS } from "../state.js";
 import { createPadEl, type PadHandlers } from "./pad.js";
 
 // Constrúe a grella de pads (catro filas QWERTY + barra espazadora).
@@ -14,7 +14,7 @@ export function buildGrid(
     const rowEl = document.createElement("div");
     rowEl.className = "grid-row";
     for (const key of row) {
-      const pad = state.pads.get(key);
+      const pad = getPad(key);
       if (!pad) continue;
       const el = createPadEl(pad, handlers);
       els.set(key, el);

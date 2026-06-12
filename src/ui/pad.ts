@@ -1,4 +1,5 @@
 import type { Pad } from "../state.js";
+import { escapeHtml } from "./html.js";
 
 export interface PadHandlers {
   onPress: (key: string) => void; // disparo (pointerdown)
@@ -69,7 +70,9 @@ export function renderPadContent(el: HTMLElement, pad: Pad): void {
     el.innerHTML = `
       <span class="pad-key">${keyLabel}</span>
       <span class="pad-name">${escapeHtml(pad.displayName ?? "son")}</span>
-      <span class="pad-icons">${icons.join("")}</span>`;
+      <span class="pad-icons">${icons.join("")}</span>
+      <span class="pad-remaining" hidden></span>
+      <div class="pad-progress"><div class="pad-bar"></div></div>`;
   } else {
     el.innerHTML = `
       <span class="pad-key">${keyLabel}</span>
@@ -84,12 +87,4 @@ export function setPadState(
   if (opts.selected != null) el.classList.toggle("selected", opts.selected);
   if (opts.playing != null) el.classList.toggle("playing", opts.playing);
   if (opts.loading != null) el.classList.toggle("loading", opts.loading);
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(
-    /[&<>"']/g,
-    (c) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
-  );
 }

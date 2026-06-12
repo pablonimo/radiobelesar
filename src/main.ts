@@ -1,6 +1,7 @@
 import { changePassword, fetchPads, login, uploadSound } from "./api/client.js";
 import {
   audioContext,
+  countdown,
   loadBuffer,
   isPlaying,
   onVoicesChange,
@@ -8,16 +9,17 @@ import {
   setBuffer,
   stop,
   stopAll,
+  stopAllFade,
   trigger,
 } from "./audio/engine.js";
-import { computePeaks } from "./audio/waveform.js";
+import { computePeaks, formatTime } from "./audio/waveform.js";
 import { buildGrid } from "./ui/grid.js";
 import { renderPadContent, setPadState } from "./ui/pad.js";
 import { attachKeyboard } from "./ui/keyboard.js";
 import { createBottomBar, type BottomBar } from "./ui/bottombar.js";
 import { createActiveList } from "./ui/activelist.js";
 import { randomQuote } from "./quotes.js";
-import { getPad, setPad, state } from "./state.js";
+import { BANKS, getPad, padId, setPad, state } from "./state.js";
 
 const el = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as T;
 
@@ -29,12 +31,17 @@ const loginCancel = el<HTMLButtonElement>("#login-cancel");
 const gridEl = el<HTMLElement>("#grid");
 const bottomEl = el<HTMLElement>("#bottombar");
 const quoteEl = el<HTMLElement>("#quote");
+const banksEl = el<HTMLElement>("#banks");
 
 let padEls = new Map<string, HTMLElement>();
 let bottomBar: BottomBar;
 let pendingUploadKey: string | null = null;
 let editMode = false;
 let started = false;
+
+const PANIC_FADE_SECONDS = 1.2;
+const PRELOAD_CONCURRENCY = 5;
+const BANK_STORAGE_KEY = "rb_bank";
 
 // Input de ficheiro oculto, reutilizado para subir/substituír.
 const fileInput = document.createElement("input");
@@ -51,12 +58,15 @@ init();
 async function init() {
   // A app arranca SEMPRE en modo uso (sen clave). Para editar hai que premer
   // "Modificar" e introducir a clave; así o alumnado non pode modificar nada.
+  registerServiceWorker();
   await startApp();
 }
 
 async function startApp() {
   if (started) return;
   started = true;
+
+  restoreBank();
 
   const pads = await fetchPads();
   state.pads.clear();
@@ -79,13 +89,18 @@ async function startApp() {
 
   attachKeyboard({ onPress: handlePress, onRelease: handleRelease });
   createActiveList(el<HTMLElement>("#active-list"));
+  setupBanks();
 
-  onVoicesChange((key) => {
+  onVoicesChange((id) => {
+    // id é "banco:tecla"; só actualizamos o pad se está visible no banco actual.
+    const key = id.slice(id.indexOf(":") + 1);
+    const pad = getPad(key);
+    if (!pad || padId(pad) !== id) return;
     const e = padEls.get(key);
-    if (e) setPadState(e, { playing: isPlaying(key) });
+    if (e) setPadState(e, { playing: isPlaying(id) });
   });
 
-  el<HTMLButtonElement>("#btn-panic").addEventListener("click", () => stopAll());
+  el<HTMLButtonElement>("#btn-panic").addEventListener("click", onPanicClick);
   el<HTMLButtonElement>("#btn-modify").addEventListener("click", onModifyClick);
   el<HTMLButtonElement>("#btn-password").addEventListener("click", doChangePassword);
   fileInput.addEventListener("change", onFileChosen);
@@ -98,11 +113,64 @@ async function startApp() {
   rotateQuote();
   window.setInterval(rotateQuote, 12000);
 
-  preloadAll();
+  requestAnimationFrame(tickCountdowns);
+  void preloadAll();
 }
 
 function rotateQuote() {
   quoteEl.textContent = randomQuote();
+}
+
+// ---------------------------------------------------------------------------
+// Bancos de sons (a fila de números é común a todos)
+// ---------------------------------------------------------------------------
+function restoreBank() {
+  try {
+    const stored = Number(localStorage.getItem(BANK_STORAGE_KEY));
+    if (BANKS.includes(stored)) state.bank = stored;
+  } catch {
+    /* sen localStorage (modo privado): non pasa nada */
+  }
+}
+
+function setupBanks() {
+  for (const btn of banksEl.querySelectorAll<HTMLButtonElement>(".bank-btn")) {
+    btn.classList.toggle("active", Number(btn.dataset.bank) === state.bank);
+    btn.addEventListener("click", () => setBank(Number(btn.dataset.bank)));
+  }
+  // F1..F4 cambian de banco desde o teclado físico.
+  window.addEventListener("keydown", (ev) => {
+    const m = /^F([1-4])$/.exec(ev.key);
+    if (!m) return;
+    ev.preventDefault();
+    setBank(Number(m[1]));
+  });
+}
+
+function setBank(bank: number) {
+  if (!BANKS.includes(bank) || bank === state.bank) return;
+  state.bank = bank;
+  try {
+    localStorage.setItem(BANK_STORAGE_KEY, String(bank));
+  } catch {
+    /* ignorámolo */
+  }
+  for (const btn of banksEl.querySelectorAll<HTMLButtonElement>(".bank-btn")) {
+    btn.classList.toggle("active", Number(btn.dataset.bank) === bank);
+  }
+  // Deseleccionamos e refrescamos a grella co novo banco.
+  if (state.selectedKey) {
+    const prev = padEls.get(state.selectedKey);
+    if (prev) setPadState(prev, { selected: false });
+    state.selectedKey = null;
+  }
+  bottomBar.hide();
+  for (const [key, e] of padEls) {
+    const pad = getPad(key);
+    if (!pad) continue;
+    renderPadContent(e, pad);
+    setPadState(e, { playing: isPlaying(padId(pad)), selected: false });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -149,6 +217,29 @@ async function onLoginSubmit(ev: Event) {
 }
 
 // ---------------------------------------------------------------------------
+// Pánico: primeira pulsación FUNDE todo (suave en antena);
+// segunda pulsación (mentres funde) corta en seco.
+// ---------------------------------------------------------------------------
+let panicTimer = 0;
+
+function onPanicClick() {
+  const btn = el<HTMLButtonElement>("#btn-panic");
+  if (panicTimer) {
+    stopAll();
+    clearTimeout(panicTimer);
+    panicTimer = 0;
+    btn.classList.remove("fading");
+    return;
+  }
+  stopAllFade(PANIC_FADE_SECONDS);
+  btn.classList.add("fading");
+  panicTimer = window.setTimeout(() => {
+    panicTimer = 0;
+    btn.classList.remove("fading");
+  }, PANIC_FADE_SECONDS * 1000);
+}
+
+// ---------------------------------------------------------------------------
 // Disparo (sempre dispoñible) e selección (só en edición)
 // ---------------------------------------------------------------------------
 function handlePress(key: string) {
@@ -165,7 +256,7 @@ function handlePress(key: string) {
 
 function handleRelease(key: string) {
   const pad = getPad(key);
-  if (pad?.hold) stop(key, false);
+  if (pad?.hold) stop(padId(pad), false);
 }
 
 // Selección por toque/rato (pad.ts): só ten efecto en edición.
@@ -199,26 +290,77 @@ function updateGridPad(key: string) {
   const e = padEls.get(key);
   if (pad && e) {
     renderPadContent(e, pad);
-    setPadState(e, { playing: isPlaying(key), selected: state.selectedKey === key });
+    setPadState(e, {
+      playing: isPlaying(padId(pad)),
+      selected: state.selectedKey === key,
+    });
   }
 }
 
 // ---------------------------------------------------------------------------
-// Precarga (clave para a latencia)
+// Conta atrás nos pads que están a soar (canto queda para entrar a falar)
+// ---------------------------------------------------------------------------
+const countdownShown = new Set<string>();
+
+function tickCountdowns() {
+  for (const [key, e] of padEls) {
+    const pad = getPad(key);
+    const info = pad?.soundFile ? countdown(padId(pad)) : null;
+    if (!info) {
+      if (countdownShown.has(key)) {
+        countdownShown.delete(key);
+        clearCountdown(e);
+      }
+      continue;
+    }
+    countdownShown.add(key);
+    const remEl = e.querySelector<HTMLElement>(".pad-remaining");
+    const barEl = e.querySelector<HTMLElement>(".pad-bar");
+    if (remEl) {
+      remEl.hidden = false;
+      remEl.textContent = info.remaining == null ? "∞" : formatTime(info.remaining);
+    }
+    if (barEl) barEl.style.width = `${(info.fraction * 100).toFixed(1)}%`;
+    e.classList.toggle("ending", info.remaining != null && info.remaining <= 5);
+  }
+  requestAnimationFrame(tickCountdowns);
+}
+
+function clearCountdown(e: HTMLElement) {
+  const remEl = e.querySelector<HTMLElement>(".pad-remaining");
+  const barEl = e.querySelector<HTMLElement>(".pad-bar");
+  if (remEl) remEl.hidden = true;
+  if (barEl) barEl.style.width = "0%";
+  e.classList.remove("ending");
+}
+
+// ---------------------------------------------------------------------------
+// Precarga (clave para a latencia) — en PARALELO cun límite de conexións,
+// priorizando o banco visible e os pads comúns.
 // ---------------------------------------------------------------------------
 async function preloadAll() {
-  for (const pad of state.pads.values()) {
-    if (!pad.audioUrl) continue;
-    const e = padEls.get(pad.key);
-    if (e) setPadState(e, { loading: true });
-    try {
-      await loadBuffer(pad.key, pad.audioUrl);
-    } catch (err) {
-      console.error(`Non se puido precargar ${pad.key}:`, err);
-    } finally {
-      if (e) setPadState(e, { loading: false });
+  const pads = [...state.pads.values()].filter((p) => p.audioUrl);
+  const prio = (p: { bank: number }) =>
+    p.bank === 0 || p.bank === state.bank ? 0 : 1;
+  pads.sort((a, b) => prio(a) - prio(b));
+
+  let i = 0;
+  const worker = async () => {
+    while (i < pads.length) {
+      const pad = pads[i++];
+      const visible = pad.bank === 0 || pad.bank === state.bank;
+      const e = visible ? padEls.get(pad.key) : undefined;
+      if (e) setPadState(e, { loading: true });
+      try {
+        await loadBuffer(padId(pad), pad.audioUrl!);
+      } catch (err) {
+        console.error(`Non se puido precargar ${padId(pad)}:`, err);
+      } finally {
+        if (e) setPadState(e, { loading: false });
+      }
     }
-  }
+  };
+  await Promise.all(Array.from({ length: PRELOAD_CONCURRENCY }, worker));
 }
 
 // ---------------------------------------------------------------------------
@@ -241,7 +383,8 @@ async function onFileChosen() {
 
 async function assignFile(key: string, file: File) {
   if (!editMode) return;
-  if (!getPad(key)) return;
+  const target = getPad(key);
+  if (!target) return;
   if (file.type && !file.type.startsWith("audio/")) {
     alert("O ficheiro non é de audio.");
     return;
@@ -263,14 +406,14 @@ async function assignFile(key: string, file: File) {
   }
 
   try {
-    const pad = await uploadSound(key, file, {
+    const pad = await uploadSound(target.bank, key, file, {
       duration,
       peaks,
       displayName: file.name.replace(/\.[^.]+$/, ""),
     });
     setPad(pad);
-    if (decoded) setBuffer(key, decoded);
-    else if (pad.audioUrl) await loadBuffer(key, pad.audioUrl);
+    if (decoded) setBuffer(padId(pad), decoded);
+    else if (pad.audioUrl) await loadBuffer(padId(pad), pad.audioUrl);
     updateGridPad(key);
     selectPad(key);
   } catch (err) {
@@ -294,6 +437,20 @@ async function doChangePassword() {
   } catch (e) {
     alert(`Non se puido cambiar: ${(e as Error).message}`);
   }
+}
+
+// ---------------------------------------------------------------------------
+// PWA: rexistro do service worker (caché offline da app e dos audios).
+// Só en produción: en desenvolvemento interferiría co recargado de Vite.
+// ---------------------------------------------------------------------------
+function registerServiceWorker() {
+  const env = (import.meta as unknown as { env?: { PROD?: boolean } }).env;
+  if (!("serviceWorker" in navigator) || env?.PROD !== true) return;
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/sw.js")
+      .catch((err) => console.warn("Non se puido rexistrar o service worker:", err));
+  });
 }
 
 // Evitamos o desprazamento da páxina coa barra espazadora.

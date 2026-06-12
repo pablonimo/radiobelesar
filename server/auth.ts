@@ -36,6 +36,9 @@ export async function setPassword(password: string): Promise<void> {
 
 // ---- Token de sesión (HMAC sobre o segredo do servidor) ----
 
+// Mesma vida que a cookie (1 ano): un token roubado non vale para sempre.
+const TOKEN_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000;
+
 function sign(payload: string): string {
   return createHmac("sha256", SESSION_SECRET).update(payload).digest("base64url");
 }
@@ -53,7 +56,13 @@ export function verifyToken(token?: string): boolean {
   const expected = sign(payload);
   const a = Buffer.from(sig);
   const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return false;
+  // Comprobamos a antigüidade do token (o payload é "s:<timestamp>").
+  if (!payload.startsWith("s:")) return false;
+  const issuedAt = Number(payload.slice(2));
+  if (!Number.isFinite(issuedAt)) return false;
+  const age = Date.now() - issuedAt;
+  return age >= 0 && age <= TOKEN_MAX_AGE_MS;
 }
 
 /** preHandler de Fastify: corta calquera petición sen sesión válida. */

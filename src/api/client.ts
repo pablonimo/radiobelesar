@@ -62,6 +62,7 @@ export interface UploadMeta {
 }
 
 export async function uploadSound(
+  bank: number,
   key: string,
   file: File,
   meta: UploadMeta,
@@ -74,7 +75,7 @@ export async function uploadSound(
   form.set("file", file);
 
   const { pad } = await asJson<{ pad: Pad }>(
-    await fetch(`/api/pads/${encodeURIComponent(key)}/sound`, {
+    await fetch(`/api/pads/${bank}/${encodeURIComponent(key)}/sound`, {
       method: "POST",
       credentials: "include",
       body: form,
@@ -83,9 +84,13 @@ export async function uploadSound(
   return pad;
 }
 
-export async function updatePad(key: string, patch: Partial<Pad>): Promise<Pad> {
+export async function updatePad(
+  bank: number,
+  key: string,
+  patch: Partial<Pad>,
+): Promise<Pad> {
   const { pad } = await asJson<{ pad: Pad }>(
-    await fetch(`/api/pads/${encodeURIComponent(key)}`, {
+    await fetch(`/api/pads/${bank}/${encodeURIComponent(key)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -95,9 +100,9 @@ export async function updatePad(key: string, patch: Partial<Pad>): Promise<Pad> 
   return pad;
 }
 
-export async function deleteSound(key: string): Promise<Pad> {
+export async function deleteSound(bank: number, key: string): Promise<Pad> {
   const { pad } = await asJson<{ pad: Pad }>(
-    await fetch(`/api/pads/${encodeURIComponent(key)}/sound`, {
+    await fetch(`/api/pads/${bank}/${encodeURIComponent(key)}/sound`, {
       method: "DELETE",
       credentials: "include",
     }),

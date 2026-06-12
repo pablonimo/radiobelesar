@@ -1,0 +1,25 @@
+{
+  "name": "Radio Belesar — Mesa de son",
+  "short_name": "Radio Belesar",
+  "description": "Soundboard da radio escolar do CEIP Belesar",
+  "lang": "gl",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4ead5",
+  "theme_color": "#2a7f7a",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

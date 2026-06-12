@@ -1,4 +1,4 @@
-import type { Pad } from "../state.js";
+import { padId, type Pad } from "../state.js";
 import { deleteSound, updatePad } from "../api/client.js";
 import {
   activeProgress,
@@ -28,6 +28,10 @@ export function createBottomBar(root: HTMLElement, deps: BottomDeps): BottomBar 
   let pad: Pad | null = null;
   let rafId = 0;
   let saveTimer = 0;
+  // Cambios pendentes de gardar: acumúlanse e envíanse XUNTOS (se non,
+  // dous cambios seguidos en <200ms farían perder o primeiro).
+  let pendingPatch: Partial<Pad> = {};
+  let pendingPad: Pad | null = null;
 
   root.innerHTML = `
     <div class="bb-info">
@@ -98,7 +102,7 @@ export function createBottomBar(root: HTMLElement, deps: BottomDeps): BottomBar 
 
   function duration(): number {
     if (!pad) return 0;
-    return getBuffer(pad.key)?.duration ?? pad.duration ?? 0;
+    return getBuffer(padId(pad))?.duration ?? pad.duration ?? 0;
   }
 
   function trimFraction(): { start: number; end: number } | null {
@@ -113,7 +117,7 @@ export function createBottomBar(root: HTMLElement, deps: BottomDeps): BottomBar 
   function redraw() {
     if (!pad) return;
     const d = duration();
-    const prog = activeProgress(pad.key);
+    const prog = activeProgress(padId(pad));
 
     // Posición do cursor. En bucle, envolve dentro do tramo recortado para que
     // volva ao inicio ao chegar ao fin (en vez de seguir avanzando).
@@ -129,7 +133,7 @@ export function createBottomBar(root: HTMLElement, deps: BottomDeps): BottomBar 
     const progress = prog && d ? Math.min(pos / d, 1) : undefined;
     drawWaveform(canvas, pad.peaks, { progress, trim: trimFraction() });
     timeEl.textContent = `${formatTime(pos)} / ${formatTime(d)}`;
-    playBtn.textContent = isPlaying(pad.key) ? "■" : "▶";
+    playBtn.textContent = isPlaying(padId(pad)) ? "■" : "▶";
     positionHandles();
   }
 
@@ -154,21 +158,41 @@ export function createBottomBar(root: HTMLElement, deps: BottomDeps): BottomBar 
 
   function persist(patch: Partial<Pad>) {
     if (!pad) return;
+    // Se hai cambios pendentes DOUTRO pad, envíanse antes de cambiar de obxectivo.
+    if (pendingPad && padId(pendingPad) !== padId(pad)) flushSave();
     Object.assign(pad, patch);
+    pendingPatch = { ...pendingPatch, ...patch };
+    pendingPad = pad;
     deps.onPadChanged(pad);
     redraw();
     if (saveTimer) clearTimeout(saveTimer);
-    const key = pad.key;
-    saveTimer = window.setTimeout(() => {
-      updatePad(key, patch).catch((e) => console.error("Non se gardou:", e));
-    }, 200);
+    saveTimer = window.setTimeout(flushSave, 200);
+  }
+
+  function flushSave() {
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+      saveTimer = 0;
+    }
+    if (!pendingPad || Object.keys(pendingPatch).length === 0) {
+      pendingPatch = {};
+      pendingPad = null;
+      return;
+    }
+    const target = pendingPad;
+    const patch = pendingPatch;
+    pendingPatch = {};
+    pendingPad = null;
+    updatePad(target.bank, target.key, patch).catch((e) =>
+      console.error("Non se gardou:", e),
+    );
   }
 
   // ---- Eventos dos controis ----
   playBtn.addEventListener("click", () => pad && trigger(pad));
   volEl.addEventListener("input", () => {
     const v = Number(volEl.value);
-    if (pad) setVolume(pad.key, v); // aplica o volume en directo ás voces que soan
+    if (pad) setVolume(padId(pad), v); // aplica o volume en directo ás voces que soan
     persist({ volume: v });
   });
   modeEl.addEventListener("change", () =>
@@ -210,11 +234,11 @@ export function createBottomBar(root: HTMLElement, deps: BottomDeps): BottomBar 
   }
 
   $<HTMLButtonElement>(".bb-mark-start").addEventListener("click", () => {
-    const prog = pad && activeProgress(pad.key);
+    const prog = pad && activeProgress(padId(pad));
     if (pad && prog) persist({ trimStart: round(prog.position) });
   });
   $<HTMLButtonElement>(".bb-mark-end").addEventListener("click", () => {
-    const prog = pad && activeProgress(pad.key);
+    const prog = pad && activeProgress(padId(pad));
     if (pad && prog) persist({ trimEnd: round(prog.position) });
   });
   $<HTMLButtonElement>(".bb-clear-trim").addEventListener("click", () =>
@@ -226,10 +250,10 @@ export function createBottomBar(root: HTMLElement, deps: BottomDeps): BottomBar 
   $<HTMLButtonElement>(".bb-delete").addEventListener("click", async () => {
     if (!pad) return;
     if (!confirm(`Eliminar o son de "${pad.displayName ?? pad.key}"?`)) return;
-    const key = pad.key;
-    stop(key, false);
-    const updated = await deleteSound(key);
-    clearBuffer(key);
+    const id = padId(pad);
+    stop(id, false);
+    const updated = await deleteSound(pad.bank, pad.key);
+    clearBuffer(id);
     deps.onPadChanged(updated);
     hide();
   });
@@ -240,7 +264,7 @@ export function createBottomBar(root: HTMLElement, deps: BottomDeps): BottomBar 
     const rect = canvas.getBoundingClientRect();
     const f = clamp((ev.clientX - rect.left) / rect.width, 0, 1);
     const d = duration();
-    stop(pad.key, false);
+    stop(padId(pad), false);
     start({ ...pad, trimStart: f * d, trimEnd: d, loop: false });
   });
 
@@ -271,6 +295,7 @@ export function createBottomBar(root: HTMLElement, deps: BottomDeps): BottomBar 
   }
 
   function show(p: Pad) {
+    if (pad && padId(pad) !== padId(p)) flushSave();
     pad = p;
     root.hidden = false;
     fill(p);
@@ -278,6 +303,7 @@ export function createBottomBar(root: HTMLElement, deps: BottomDeps): BottomBar 
   }
 
   function hide() {
+    flushSave(); // non perdemos cambios pendentes ao pechar a barra
     pad = null;
     root.hidden = true;
     if (rafId) {

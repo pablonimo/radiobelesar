@@ -1,4 +1,4 @@
-import type { Pad } from "../state.js";
+import { padId, type Pad } from "../state.js";
 
 // ===========================================================================
 // Motor de audio (Web Audio API).
@@ -104,9 +104,10 @@ export function activeProgress(key: string): { position: number; voice: Voice } 
 
 /** Disparo principal: respeta o modo alternancia (agás hold). */
 export function trigger(pad: Pad): void {
-  if (!buffers.has(pad.key)) return;
-  if (!pad.hold && isPlaying(pad.key)) {
-    stop(pad.key, pad.mode === "fundido");
+  const id = padId(pad);
+  if (!buffers.has(id)) return;
+  if (!pad.hold && isPlaying(id)) {
+    stop(id, pad.mode === "fundido");
     return;
   }
   start(pad);
@@ -114,7 +115,8 @@ export function trigger(pad: Pad): void {
 
 /** Inicia unha voz nova. Devolve a voz (útil no modo hold). */
 export function start(pad: Pad): Voice | null {
-  const buffer = buffers.get(pad.key);
+  const id = padId(pad);
+  const buffer = buffers.get(id);
   if (!buffer) return null;
 
   const src = ctx.createBufferSource();
@@ -145,7 +147,7 @@ export function start(pad: Pad): Voice | null {
 
   const voice: Voice = {
     id: ++voiceCounter,
-    key: pad.key,
+    key: id,
     name: pad.displayName ?? pad.key,
     color: pad.color ?? "verde",
     src,
@@ -156,10 +158,10 @@ export function start(pad: Pad): Voice | null {
     loop: pad.loop,
     fade: pad.mode === "fundido",
   };
-  let set = voices.get(pad.key);
+  let set = voices.get(id);
   if (!set) {
     set = new Set();
-    voices.set(pad.key, set);
+    voices.set(id, set);
   }
   set.add(voice);
   voiceById.set(voice.id, voice);
@@ -167,12 +169,12 @@ export function start(pad: Pad): Voice | null {
   src.onended = () => {
     set!.delete(voice);
     voiceById.delete(voice.id);
-    changeListener(pad.key);
+    changeListener(id);
   };
 
   // Con bucle reproducimos indefinidamente; sen bucle, só o tramo recortado.
   src.start(0, offset, pad.loop ? undefined : segment);
-  changeListener(pad.key);
+  changeListener(id);
   return voice;
 }
 
@@ -190,6 +192,37 @@ export function stopAll(): void {
   for (const key of voices.keys()) {
     stop(key, false);
   }
+}
+
+/** Pánico suave: funde TODAS as voces á vez (mellor en antena que un corte seco). */
+export function stopAllFade(seconds = 1.2): void {
+  for (const voice of [...voiceById.values()]) {
+    release(voice, true, seconds);
+  }
+}
+
+/** Info de conta atrás dun pad (voz máis recente): tempo restante e fracción 0..1. */
+export interface Countdown {
+  remaining: number | null; // null = bucle (non remata só)
+  fraction: number; // 0..1 dentro do tramo que soa
+}
+
+export function countdown(key: string): Countdown | null {
+  const set = voices.get(key);
+  if (!set || set.size === 0) return null;
+  let latest: Voice | null = null;
+  for (const v of set) {
+    if (!latest || v.startedAt > latest.startedAt) latest = v;
+  }
+  if (!latest || latest.segment <= 0) return null;
+  const elapsed = Math.max(0, ctx.currentTime - latest.startedAt);
+  if (latest.loop) {
+    return { remaining: null, fraction: (elapsed % latest.segment) / latest.segment };
+  }
+  return {
+    remaining: Math.max(0, latest.segment - elapsed),
+    fraction: Math.min(elapsed / latest.segment, 1),
+  };
 }
 
 /** Detén unha reprodución concreta polo seu id (X na columna de activos). */
@@ -235,15 +268,15 @@ export function listActiveVoices(): ActiveVoice[] {
   return out;
 }
 
-function release(voice: Voice, fade: boolean): void {
+function release(voice: Voice, fade: boolean, seconds = FADE_SECONDS): void {
   const t = ctx.currentTime;
   try {
     if (fade) {
       const current = Math.max(voice.gain.gain.value, MIN_GAIN);
       voice.gain.gain.cancelScheduledValues(t);
       voice.gain.gain.setValueAtTime(current, t);
-      voice.gain.gain.exponentialRampToValueAtTime(MIN_GAIN, t + FADE_SECONDS);
-      voice.src.stop(t + FADE_SECONDS);
+      voice.gain.gain.exponentialRampToValueAtTime(MIN_GAIN, t + seconds);
+      voice.src.stop(t + seconds);
     } else {
       voice.src.stop();
     }
